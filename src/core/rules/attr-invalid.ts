@@ -127,7 +127,11 @@ export default {
         // If the tag is a regular HTML tag, use HTML attributes
         const specificAttributes = htmlElementAttributes[tagName] || []
 
+        // meta tags have special attributes
+        const offests = tagName === 'meta' ? ['name', 'content'] : []
+
         validAttributesForTag = [
+          ...offests,
           ...commonAttributes,
           ...specificAttributes,
           ...(htmlEventAttributes || []),
