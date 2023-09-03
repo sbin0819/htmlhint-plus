@@ -128,7 +128,8 @@ export default {
         const specificAttributes = htmlElementAttributes[tagName] || []
 
         // meta tags have special attributes
-        const offests = tagName === 'meta' ? ['name', 'content'] : []
+        const offests =
+          tagName === 'meta' ? ['name', 'property', 'content'] : []
 
         validAttributesForTag = [
           ...offests,

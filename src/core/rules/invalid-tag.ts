@@ -204,18 +204,37 @@ const svgTags = [
   'vkern',
 ]
 
-const allValidTagsSet = new Set(
-  [...validTags, ...svgTags].map((tag) => tag.toLowerCase())
-)
+const allValidTags = [...new Set([...validTags, ...svgTags])]
+
+const selfClosingTags = new Set([
+  'area',
+  'base',
+  'br',
+  'col',
+  'command',
+  'embed',
+  'hr',
+  'img',
+  'input',
+  'keygen',
+  'link',
+  'meta',
+  'param',
+  'source',
+  'track',
+  'wbr',
+])
 
 export default {
   id: 'invalid-tag',
-  description: 'All tags must be valid HTML or SVG tags.',
+  description: 'All tags must be valid HTML tags.',
   init(parser, reporter) {
+    const openTagsStack: string[] = []
+
     parser.addListener('tagstart', (event) => {
       const tagName = event.tagName.toLowerCase()
 
-      if (!allValidTagsSet.has(tagName)) {
+      if (!allValidTags.includes(tagName)) {
         reporter.error(
           `The tag [ ${tagName} ] is not a valid HTML or SVG tag.`,
           event.line,
@@ -223,7 +242,42 @@ export default {
           this,
           event.raw
         )
+      } else {
+        if (!selfClosingTags.has(tagName)) {
+          openTagsStack.push(tagName) // Add only non-self-closing tags to our stack
+        }
       }
+    })
+
+    parser.addListener('tagend', (event) => {
+      const tagName = event.tagName.toLowerCase()
+
+      if (!allValidTags.includes(tagName)) {
+        reporter.error(
+          `The closing tag [ ${tagName} ] is not a valid HTML or SVG tag.`,
+          event.line,
+          event.col,
+          this,
+          event.raw
+        )
+      } else {
+        const lastIndex = openTagsStack.lastIndexOf(tagName)
+        if (lastIndex !== -1) {
+          openTagsStack.splice(lastIndex, 1) // Remove the tag from our stack once closed
+        }
+      }
+    })
+
+    parser.addListener('end', () => {
+      openTagsStack.forEach((tagName) => {
+        reporter.error(
+          `The tag [ ${tagName} ] was opened but never closed.`,
+          0,
+          0,
+          this,
+          ''
+        )
+      })
     })
   },
 } as Rule
