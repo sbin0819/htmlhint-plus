@@ -1,6 +1,6 @@
 {
   "name": "htmlhint-plus",
-  "version": "0.0.7",
+  "version": "0.0.8",
   "description": "Add invalid attribute rule to htmlhint",
   "keywords": [
     "html",

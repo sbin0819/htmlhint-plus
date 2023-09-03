@@ -204,18 +204,18 @@ const svgTags = [
   'vkern',
 ]
 
-const allValidTags = [...new Set([...validTags, ...svgTags])]
+const allValidTagsSet = new Set(
+  [...validTags, ...svgTags].map((tag) => tag.toLowerCase())
+)
 
 export default {
   id: 'invalid-tag',
-  description: 'All tags must be valid HTML tags.',
+  description: 'All tags must be valid HTML or SVG tags.',
   init(parser, reporter) {
-    const openTagsStack: string[] = []
-
     parser.addListener('tagstart', (event) => {
       const tagName = event.tagName.toLowerCase()
 
-      if (!allValidTags.includes(tagName)) {
+      if (!allValidTagsSet.has(tagName)) {
         reporter.error(
           `The tag [ ${tagName} ] is not a valid HTML or SVG tag.`,
           event.line,
@@ -223,40 +223,7 @@ export default {
           this,
           event.raw
         )
-      } else {
-        openTagsStack.push(tagName) // Add valid tags to our stack
       }
-    })
-
-    parser.addListener('tagend', (event) => {
-      const tagName = event.tagName.toLowerCase()
-
-      if (!allValidTags.includes(tagName)) {
-        reporter.error(
-          `The closing tag [ ${tagName} ] is not a valid HTML or SVG tag.`,
-          event.line,
-          event.col,
-          this,
-          event.raw
-        )
-      } else {
-        const lastIndex = openTagsStack.lastIndexOf(tagName)
-        if (lastIndex !== -1) {
-          openTagsStack.splice(lastIndex, 1) // Remove the tag from our stack once closed
-        }
-      }
-    })
-
-    parser.addListener('end', () => {
-      openTagsStack.forEach((tagName) => {
-        reporter.error(
-          `The tag [ ${tagName} ] was opened but never closed.`,
-          0,
-          0,
-          this,
-          ''
-        )
-      })
     })
   },
 } as Rule
