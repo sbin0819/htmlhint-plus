@@ -1,4 +1,3 @@
-import { Block } from '../htmlparser'
 import { Rule } from '../types'
 
 const validTags = [
@@ -208,10 +207,10 @@ const svgTags = [
 const allValidTags = [...new Set([...validTags, ...svgTags])]
 
 export default {
-  id: 'invalid-tag-pair',
-  description: 'All tags must be valid HTML tags and they must be paired.',
+  id: 'invalid-tag',
+  description: 'All tags must be valid HTML tags.',
   init(parser, reporter) {
-    const stack: Array<Partial<Block>> = []
+    const openTagsStack: string[] = []
 
     parser.addListener('tagstart', (event) => {
       const tagName = event.tagName.toLowerCase()
@@ -225,87 +224,29 @@ export default {
           event.raw
         )
       } else {
-        stack.push({
-          tagName: tagName,
-          line: event.line,
-          raw: event.raw,
-        })
+        openTagsStack.push(tagName) // Add valid tags to our stack
       }
     })
 
     parser.addListener('tagend', (event) => {
       const tagName = event.tagName.toLowerCase()
 
-      if (!allValidTags.includes(tagName)) {
-        reporter.error(
-          `The closing tag [ ${tagName} ] is not a valid HTML or SVG tag.`,
-          event.line,
-          event.col,
-          this,
-          event.raw
-        )
-      } else {
-        let pos
-        for (pos = stack.length - 1; pos >= 0; pos--) {
-          if (stack[pos].tagName === tagName) {
-            break
-          }
-        }
-
-        if (pos >= 0) {
-          const arrTags = []
-          for (let i = stack.length - 1; i > pos; i--) {
-            arrTags.push(`</${stack[i].tagName}>`)
-          }
-
-          if (arrTags.length > 0) {
-            const lastEvent = stack[stack.length - 1]
-            reporter.error(
-              `Tag must be paired, missing: [ ${arrTags.join(
-                ''
-              )} ], start tag match failed [ ${lastEvent.raw} ] on line ${
-                lastEvent.line
-              }.`,
-              event.line,
-              event.col,
-              this,
-              event.raw
-            )
-          }
-
-          stack.length = pos
-        } else {
-          reporter.error(
-            `Tag must be paired, no start tag: [ ${event.raw} ]`,
-            event.line,
-            event.col,
-            this,
-            event.raw
-          )
-        }
+      const lastIndex = openTagsStack.lastIndexOf(tagName)
+      if (lastIndex !== -1) {
+        openTagsStack.splice(lastIndex, 1) // Remove the tag from our stack once closed
       }
     })
 
     parser.addListener('end', () => {
-      const arrTags = []
-      for (let i = stack.length - 1; i >= 0; i--) {
-        arrTags.push(`</${stack[i].tagName}>`)
-      }
-
-      if (arrTags.length > 0) {
-        const lastEvent = stack[stack.length - 1]
+      openTagsStack.forEach((tagName) => {
         reporter.error(
-          `Tag must be paired, missing: [ ${arrTags.join(
-            ''
-          )} ], open tag match failed [ ${lastEvent.raw} ] on line ${
-            lastEvent.line
-          }.`,
+          `The tag [ ${tagName} ] was opened but never closed.`,
           0,
           0,
           this,
           ''
         )
-      }
+      })
     })
   },
 } as Rule
