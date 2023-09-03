@@ -231,9 +231,19 @@ export default {
     parser.addListener('tagend', (event) => {
       const tagName = event.tagName.toLowerCase()
 
-      const lastIndex = openTagsStack.lastIndexOf(tagName)
-      if (lastIndex !== -1) {
-        openTagsStack.splice(lastIndex, 1) // Remove the tag from our stack once closed
+      if (!allValidTags.includes(tagName)) {
+        reporter.error(
+          `The closing tag [ ${tagName} ] is not a valid HTML or SVG tag.`,
+          event.line,
+          event.col,
+          this,
+          event.raw
+        )
+      } else {
+        const lastIndex = openTagsStack.lastIndexOf(tagName)
+        if (lastIndex !== -1) {
+          openTagsStack.splice(lastIndex, 1) // Remove the tag from our stack once closed
+        }
       }
     })
 
