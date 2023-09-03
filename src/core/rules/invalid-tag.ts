@@ -204,6 +204,8 @@ const svgTags = [
   'vkern',
 ]
 
+const allValidTags = [...new Set([...validTags, ...svgTags])]
+
 export default {
   id: 'invalid-tag',
   description: 'All tags must be valid HTML tags.',
@@ -211,11 +213,11 @@ export default {
     const openTagsStack: string[] = []
 
     parser.addListener('tagstart', (event) => {
-      const tagName = event.tagName
+      const tagName = event.tagName.toLowerCase()
 
-      if (!validTags.includes(tagName) && !svgTags.includes(tagName)) {
+      if (!allValidTags.includes(tagName)) {
         reporter.error(
-          `The tag [ ${tagName} ] is not a valid HTML tag.`,
+          `The tag [ ${tagName} ] is not a valid HTML or SVG tag.`,
           event.line,
           event.col,
           this,
@@ -227,11 +229,11 @@ export default {
     })
 
     parser.addListener('tagend', (event) => {
-      const tagName = event.tagName
+      const tagName = event.tagName.toLowerCase()
 
-      if (!validTags.includes(tagName)) {
+      if (!allValidTags.includes(tagName)) {
         reporter.error(
-          `The closing tag [ ${tagName} ] is not a valid HTML tag.`,
+          `The closing tag [ ${tagName} ] is not a valid HTML or SVG tag.`,
           event.line,
           event.col,
           this,
@@ -245,14 +247,12 @@ export default {
       }
     })
 
-    // Logic for the end event
     parser.addListener('end', () => {
-      // At this point, any tags left in the stack were not closed.
       openTagsStack.forEach((tagName) => {
         reporter.error(
           `The tag [ ${tagName} ] was opened but never closed.`,
-          0, // Default values since we don't have exact position for these
-          0, // Default values since we don't have exact position for these
+          0,
+          0,
           this,
           ''
         )

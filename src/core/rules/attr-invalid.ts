@@ -118,7 +118,15 @@ export default {
       } else {
         // If the tag is a regular HTML tag, use HTML attributes
         const specificAttributes = htmlElementAttributes[tagName] || []
+        const offests = [
+          'xmlns',
+          'xmlns:xlink',
+          'xml:lang',
+          'xml:space',
+          'xmlns:xml',
+        ] // These are valid attributes for all HTML tags.
         validAttributesForTag = [
+          ...offests,
           ...commonAttributes,
           ...specificAttributes,
           ...(htmlEventAttributes || []),
